@@ -1,41 +1,53 @@
 import mongoose from 'mongoose';
 // import validator from 'validator';
 
-const register = mongoose.Schema(
+const register  = mongoose.Schema(
     {
-        Cnic: {
+        cnic: {
             type: String,
-            required: [true, 'Please Add First Name'],
-            unique: true
-            
+            required: [true, 'Please Add CNIC'],
+            unique: true,
         },
         email: {
             type: String,
-            required: [true, 'Please Add Last Name'],
-            
+            required: [true, 'Please Add Email'],
         },
-        
-        
+        name: {
+            type: String,
+            required: [true, 'Please Add Name'],
+        },
         password: {
             type: String,
             required: [true, 'Please Add Password'],
-            
         },
         isPasswordChange: {
-            type: Boolean, // Corrected the type definition
-            default: false, // Default value
-          },
-        loanRequest:{
-            type:Array
-        }
-        
-        // PasswordResetToken: {
-        //     type: String,
-        //     required: [true, 'Please Add Password'],
-        //     minlength: 8,
-        //     trim: true,
-        // },
-        
+            type: Boolean,
+            default: false,
+        },
+        loanRequest: {
+            type: Array,
+            default: [], // Ensure loanRequest is initialized
+        },
+        role: {
+            type: String,
+            default: "user",
+        },
+        city: {
+            type: String,
+            default: "Not Provided", // Default value
+        },
+        country: {
+            type: String,
+            default: "Not Provided", // Default value
+        },
+        address: {
+            type: String,
+            default: "Not Provided", // Default value
+        },
+        phone: {
+            type: String,
+            default: "Not Provided", // Default value
+        },
     },
     {
         timestamps: true,

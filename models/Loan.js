@@ -24,17 +24,19 @@ const loanSchema = new mongoose.Schema({
     },
     witness:{
         type:Array,
+        required:true
         
     },
-    depositeAmout:{
-        type:Number
+    depositAmount:{
+        type:Number,
+        required:true
     },
     loanStatus:{
         type:String,
         default:"Pending"
 
     }
-});
+}, { timestamps: true });
 
 const Loan = mongoose.model('Loan', loanSchema);
 

@@ -79,3 +79,16 @@ export const checkToken = async (req, res, next) => {
         next();
     }
 };
+
+
+
+export const verifyTokenAndAdmin = (req, res, next) => {
+    validateToken(req, res, () => {
+        if (req.user.role == 'admin') {
+            next();
+        } else {
+        res.status(401).send({ status: 'failed', message: 'Unauthorized User' });
+
+    }
+    });
+}

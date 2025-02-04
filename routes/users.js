@@ -1,6 +1,7 @@
 import express from 'express';
  
- import { registerUser, resetPasswordEmail, login } from '../controller/usersController.js';
+ import { registerUser, resetPasswordEmail, login, getAllUsers, getUser, deleteUser, updateUser } from '../controller/usersController.js';
+import { validateToken, verifyTokenAndAdmin } from '../helpers/token.js';
 
 
 
@@ -9,3 +10,7 @@ import express from 'express';
  authRoutes.post('/signup', registerUser);
  authRoutes.put('/resetPassword', resetPasswordEmail);
  authRoutes.post('/login', login);
+ authRoutes.get("/",verifyTokenAndAdmin,getAllUsers)
+ authRoutes.get("/find/:id",verifyTokenAndAdmin,getUser)
+ authRoutes.delete("/:id",verifyTokenAndAdmin,deleteUser)
+ authRoutes.put("/:id",verifyTokenAndAdmin,updateUser)

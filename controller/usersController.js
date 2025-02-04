@@ -1,13 +1,13 @@
 import { v4 as uuidv4 } from 'uuid';
 import {
-    ALREADYEXISTS,
-    BADREQUEST,
-    CREATED,
-    FORBIDDEN,
-    INTERNALERROR,
-    NOTFOUND,
-    OK,
-    UNAUTHORIZED,
+  ALREADYEXISTS,
+  BADREQUEST,
+  CREATED,
+  FORBIDDEN,
+  INTERNALERROR,
+  NOTFOUND,
+  OK,
+  UNAUTHORIZED,
 } from '../constants/httpStatus.js';
 import nodemailer from 'nodemailer';
 import { sendError, sendSuccess } from '../utils/responses.js';
@@ -18,90 +18,91 @@ import { hashSync, genSaltSync, compareSync } from 'bcrypt';
 
 
 import {
-    responseMessages,
+  responseMessages,
 
 } from '../constants/responseMessages.js';
 import Users from '../models/Users.js';
 const {
-    GET_SUCCESS_MESSAGES,
-    INVITATION_LINK_UNSUCCESS,
-    MISSING_FIELDS,
-    MISSING_FIELD_EMAIL,
-    NO_USER,
-    NO_USER_FOUND,
-    PASSWORD_AND_CONFIRM_NO_MATCH,
-    PASSWORD_CHANGE,
-    PASSWORD_FAILED,
-    RESET_LINK_SUCCESS,
-    SUCCESS_REGISTRATION,
-    UN_AUTHORIZED,
-    USER_EXISTS,
-    USER_NAME_EXISTS
+  GET_SUCCESS_MESSAGES,
+  INVITATION_LINK_UNSUCCESS,
+  MISSING_FIELDS,
+  MISSING_FIELD_EMAIL,
+  NO_USER,
+  NO_USER_FOUND,
+  PASSWORD_AND_CONFIRM_NO_MATCH,
+  PASSWORD_CHANGE,
+  PASSWORD_FAILED,
+  RESET_LINK_SUCCESS,
+  SUCCESS_REGISTRATION,
+  UN_AUTHORIZED,
+  USER_EXISTS,
+  USER_NAME_EXISTS
 } = responseMessages;
- 
-  import { sendEmailOTP } from '../helpers/merayFunction.js';
+
+import { sendEmailOTP } from '../helpers/merayFunction.js';
 
 
 
 
 export const registerUser = async (req, res) => {
-    console.log(req.body, "===>>> req.body")
+  console.log(req.body, "===>>> req.body");
+
   try {
-    const { email, Cnic } = req.body;
+      const { email, cnic, name, city, country, phone, address } = req.body;
 
-    // Check if email and CNIC are provided
-    if (!email || !Cnic) {
-      return res
-        .status(BADREQUEST)
-        .send(sendError({ status: false, message: "Email and CNIC are required." }));
-    }
+      if (!email || !cnic || !name) {
+          return res.status(BADREQUEST).send(sendError({
+              status: false,
+              message: "Email, CNIC, and Name are required."
+          }));
+      }
 
-    // Check if email already exists
-    const existingEmail = await Users.findOne({ email });
-    if (existingEmail) {
-      return res
-        .status(ALREADYEXISTS)
-        .send(sendError({ status: false, message: "Email already exists." }));
-    }
+      const existingEmail = await Users.findOne({ email });
+      if (existingEmail) {
+          return res.status(ALREADYEXISTS).send(sendError({
+              status: false,
+              message: "Email already exists."
+          }));
+      }
 
-    // Check if CNIC already exists
-    const existingCnic = await Users.findOne({ Cnic });
-    if (existingCnic) {
-      return res
-        .status(ALREADYEXISTS)
-        .send(sendError({ status: false, message: "CNIC already exists." }));
-    }
+      const existingCnic = await Users.findOne({ cnic });
+      if (existingCnic) {
+          return res.status(ALREADYEXISTS).send(sendError({
+              status: false,
+              message: "CNIC already exists."
+          }));
+      }
 
-    // Generate a password
-    const generatedPassword = uuidv4().slice(0, 6);
+      const generatedPassword = uuidv4().slice(0, 6);
 
-    // Create new user
-    const newUser = new Users({
-      email,
-      Cnic,
-      password: generatedPassword, // Save plain text for demonstration (hash this in real-world apps)
-    });
+      const newUser = new Users({
+          email,
+          cnic,
+          name,
+          password: generatedPassword,
+          city: city || "Not Provided",
+          country: country || "Not Provided",
+          phone: phone || "Not Provided",
+          address: address || "Not Provided",
+      });
 
-    const savedUser = await newUser.save();
+      const savedUser = await newUser.save();
 
-    // Send email with generated password and login URL
-    const token = GenerateToken({ data: savedUser, expiresIn: '24h' });
-     await sendEmailOTP(email, generatedPassword);
+      const token = GenerateToken({ data: savedUser, expiresIn: '24h' });
+      await sendEmailOTP(email, generatedPassword);
 
-    // Respond to frontend
-    return res.status(CREATED).send(
-      sendSuccess({
-        status: true,
-        message: "User registered successfully. Login details sent via email.",
-        data: savedUser,
-        token: token,
-      })
-    );
+      return res.status(CREATED).send(sendSuccess({
+          status: true,
+          message: "User registered successfully. Login details sent via email.",
+          data: savedUser,
+          token: token,
+      }));
   } catch (error) {
-    console.error("Error in registerUser:", error);
-    return res
-      .status(INTERNALERROR)
-      .send(sendError({ status: false, message: "An error occurred. Please try again." }));
+      console.error("Error in registerUser:", error);
+      return res.status(INTERNALERROR).send(sendError({
+          status: false,
+          message: "An error occurred. Please try again."
+      }));
   }
 };
 
@@ -177,54 +178,128 @@ export const resetPasswordEmail = async (req, res) => {
 
 
 export const login = async (req, res) => {
-    try {
-        const { email, password } = req.body;
-        if (email && password) {
-            // return res.send("login controller")
+  try {
+    const { email, password } = req.body;
+    if (email && password) {
+      // return res.send("login controller")
 
-            let user = await Users.findOne({ email: email });
-            console.log(user);
-            if (user) {
-            
-                
-                
-                if (user.email === email ) {
-                
-                    const token = GenerateToken({ data: user, expiresIn: '24h' });
-                    res.cookie('token', token, { httpOnly: true });
-                    res.status(OK).send(
-                        sendSuccess({
-                            status: true,
-                            message: 'Login Successful',
-                            token,
-                            data: user,
-                        })
-                    );
-                } else {
-                    return res
-                        .status(OK)
-                        .send(sendError({ status: false, message: responseMessages.UN_AUTHORIZED }));
-                }
-            } else {
-                return res
-                    .status(NOTFOUND)
-                    .send(sendError({ status: false, message: responseMessages.NO_USER }));
-            }
-        } else {
-            return res
-                .status(500) //BADREQUEST
-                // .send(sendError({ status: false, message: MISSING_FIELDS }));
-                .send("Missing fields");
-        }
-    } catch (error) {
-        return res.status(500)   //INTERNALERROR
-            .send(error)
-        .send(
-            sendError({
-                status: false,
-                message: error.message,
-                data: null,
+      let user = await Users.findOne({ email: email });
+      console.log(user);
+      if (user) {
+
+
+
+        if (user.email === email) {
+
+          const token = GenerateToken({ data: user, expiresIn: '24h' });
+          res.cookie('token', token, { httpOnly: true });
+          res.status(OK).send(
+            sendSuccess({
+              status: true,
+              message: 'Login Successful',
+              token,
+              data: user,
             })
-        );
+          );
+        } else {
+          return res
+            .status(OK)
+            .send(sendError({ status: false, message: responseMessages.UN_AUTHORIZED }));
+        }
+      } else {
+        return res
+          .status(NOTFOUND)
+          .send(sendError({ status: false, message: responseMessages.NO_USER }));
+      }
+    } else {
+      return res
+        .status(500) //BADREQUEST
+        // .send(sendError({ status: false, message: MISSING_FIELDS }));
+        .send("Missing fields");
     }
+  } catch (error) {
+    return res.status(500)   //INTERNALERROR
+      .send(error)
+      .send(
+        sendError({
+          status: false,
+          message: error.message,
+          data: null,
+        })
+      );
+  }
 };
+
+
+
+
+export const getAllUsers = async (req, res) => {
+  try {
+    const { country, city } = req.query; // Query parameters lo
+    let filter = {};
+
+    if (country) filter.country = country;
+    if (city) filter.city = city;
+
+    const users = await Users.find(filter); // Filter apply karo
+    return res.status(200).json(users);
+  } catch (error) {
+    return res.status(500).json({
+      status: false,
+      message: error.message,
+    });
+  }
+};
+
+
+
+// // @desc    GetUser
+// // @route   Get api/user/find/:id
+// // @access  Public
+
+
+export const getUser = async(req,res,next)=>{
+  try {
+      const getUser = await Users.findById(req.params.id )
+      return res.status(200).json(getUser)
+      
+  } catch (error) {
+     return res.status(500).json(error)
+      
+  }
+}
+
+// // @desc    DeleteUser
+// // @route   delete api/user/:id
+// // @access  Public
+
+export const deleteUser = async(req,res,next)=>{
+    
+  try {
+      await Users.findByIdAndDelete(req.params.id)
+      return res.status(200).json("User Has been Deleted Successfully")
+      
+  } catch (error) {
+     return res.status(500).json(error)
+      
+  }
+}
+
+
+// // @desc    UpdateUser
+// // @route   Put api/user/:id
+// // @access  Public
+
+
+export const updateUser = async(req,res,next)=>{
+  try {
+      const updateUser = await Users.findByIdAndUpdate(req.params.id, 
+          {$set:req.body} ,{new:true} )
+      return res.status(200).json(updateUser)
+      
+  } catch (error) {
+     return res.status(500).json(error)
+      
+  }
+
+}
