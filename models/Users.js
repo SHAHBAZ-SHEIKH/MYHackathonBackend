@@ -7,6 +7,8 @@ const register  = mongoose.Schema(
             type: String,
             required: [true, 'Please Add CNIC'],
             unique: true,
+            sparse: true, 
+            
         },
         email: {
             type: String,

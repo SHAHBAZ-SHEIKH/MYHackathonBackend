@@ -137,3 +137,34 @@ export const getLoan = async(req,res,next)=>{
   }
 }
 
+// // @desc    loanStatus
+// // @route   put api/loan/status/:id
+// // @access  Public
+
+
+
+export const updateStatus = async(req,res)=>{
+  try {
+    const { loanStatus } = req.body;
+
+    // Validate the status
+    if (!["Pending", "Rejected", "Approved"].includes(loanStatus)) {
+      return res.status(400).json({ error: "Invalid loan status" });
+    }
+
+    const updatedLoan = await Loan.findByIdAndUpdate(
+      req.params.id,
+      { loanStatus },
+      { new: true }
+    );
+
+    if (!updatedLoan) {
+      return res.status(404).json({ error: "Loan not found" });
+    }
+
+    res.status(200).json({ message: "Loan status updated successfully", updatedLoan });
+  } catch (error) {
+    res.status(500).json({ error: "Internal Server Error" });
+  }
+
+}

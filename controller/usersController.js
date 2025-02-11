@@ -46,6 +46,7 @@ import { sendEmailOTP } from '../helpers/merayFunction.js';
 
 export const registerUser = async (req, res) => {
   console.log(req.body, "===>>> req.body");
+  console.log(req.body.cnic)
 
   try {
       const { email, cnic, name, city, country, phone, address } = req.body;
@@ -56,6 +57,8 @@ export const registerUser = async (req, res) => {
               message: "Email, CNIC, and Name are required."
           }));
       }
+
+      console.log("cnic".cnic)
 
       const existingEmail = await Users.findOne({ email });
       if (existingEmail) {
@@ -229,6 +232,154 @@ export const login = async (req, res) => {
       );
   }
 };
+
+
+
+// // @desc    forgotPasswordEmail
+// // @route   GET api/auth/forgotPasswordEmail
+// // @access  Public
+
+export const forgotPasswordEmail = async (req, res) => {
+    console.log("forgotPasswordEmail controller",req.body.email)
+    try {
+        const { email } = req.body;
+        if (email) {
+            const user = await Users.findOne({
+                email: email,
+            });
+
+            console.log(user, "===>> user")
+            if (user) {
+                const secret = user._id + process.env.JWT_SECRET_KEY;
+                // console.log(user, "===>> user")
+                // console.log(user._id, "===>> userId")
+                // console.log(process.env.JWT_SECRET_KEY, "===>> secretKey")
+                const token = GenerateToken({ data: secret, expiresIn: '30m' });
+                // return res.send(token)
+                const link = `http://localhost:5173/change-password/${user._id}/${token}`;
+
+                const transporter = nodemailer.createTransport({
+                    service: 'gmail',
+                    auth: {
+                        user: process.env.PORTAL_EMAIL,
+                        pass: process.env.PORTAL_PASSWORD,
+                    },
+                });
+
+                // const transporter = nodemailer.createTransport({
+                //     host: process.env.MAILTRAPHOST,
+                //     port: process.env.MAILTRAPPORT,
+                //     auth: {
+                //         user: process.env.MAILTRAPUSERNAME,
+                //         pass: process.env.MAILTRAPPASSWORD,
+                //     },
+                // });
+
+                const mailOptions = {
+                    from: process.env.PORTAL_EMAIL,        //email jis se bhejni ho
+                    to: email,         //jisko email bhejni ho
+                    subject: 'Reset Password',
+                    text: `Please click on the link to reset your password ${link}`,
+                };
+
+                transporter.sendMail(mailOptions, (error, info) => {
+                    if (error) {
+                        console.log("error", error);
+                        return res
+                            .status(INTERNALERROR)
+                            .send(sendError({ status: false, message: error.message }));
+                    } else {
+                        console.log('Email sent: ' + info.response);
+                        return res.status(OK).send(
+                            sendSuccess({
+                                status: true,
+                                message: 'Reset Password Link Generated'
+                            })
+                        );
+                    }
+                });
+            } else {
+                return res
+                    .status(NOTFOUND)
+                    .send(sendError({ status: false, message: responseMessages.NO_USER_FOUND }));
+            }
+        } else {
+            return res
+                .status(BADREQUEST)
+                .send(sendError({ status: false, message: responseMessages.MISSING_FIELD_EMAIL }));
+        }
+    } catch (error) {
+        return res.status(INTERNALERROR).send(
+            sendError({
+                status: false,
+                message: error.message,
+                data: null,
+            })
+        );
+    }
+};
+
+
+// // Resend OTP
+// export const resendOTP = async (req, res) => {
+//     console.log("resendOTP controller");
+
+//     try {
+//         const { email } = req.body;
+
+//         // Check if the email is provided
+//         if (!email) {
+//             return res
+//                 .status(BADREQUEST)
+//                 .send(sendError({ status: false, message: responseMessages.MISSING_FIELDS }));
+//         }
+
+//         // Check if the user exists in the database
+//         const user = await Users.findOne({ email: email });
+//         console.log(user, "==>> user");
+
+//         if (!user) {
+//             return res
+//                 .status(NOTFOUND)
+//                 .send(sendError({ status: false, message: responseMessages.USER_NOT_FOUND }));
+//         }
+
+//         // Generate a new OTP
+//         const otp = uuidv4().slice(0, 6);
+//         console.log(otp, "==>> new otp generated");
+
+//         // Update the user with the new OTP and expiry time
+//         user.otp = otp;
+//         user.expiresIn = Date.now() + 300000; // OTP expires in 5 minutes
+
+//         const updatedUser = await user.save();
+
+//         // Send the new OTP via email
+//         const emailResponse = await sendEmailOTP(email, otp);
+
+//         if (!emailResponse) {
+//             return res
+//                 .status(INTERNALERROR)
+//                 .send(sendError({ status: false, message: responseMessages.EMAIL_SEND_FAILED }));
+//         }
+
+//         // Exclude the password from the response
+//         updatedUser.password = undefined;
+
+//         return res.status(OK).send(
+//             sendSuccess({
+//                 status: true,
+//                 message: "OTP sent successfully",
+//                 data: updatedUser,
+//             })
+//         );
+//     } catch (error) {
+//         console.log(error.message, "==>> error");
+//         return res
+//             .status(500) // INTERNALERROR
+//             .send(sendError({ status: false, message: error.message, error }));
+//     }
+// };
 
 
 
